@@ -17,6 +17,8 @@ import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.binding.MapperMethod;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +30,7 @@ import java.util.*;
  */
 public abstract class BaseDao {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
+    private Logger logger = LoggerFactory.getLogger(BaseDao.class);
 
     /**
      * 默认的数据库结构为 snake (a_b_c),代码中会将骆驼转换为蛇形
@@ -44,6 +46,8 @@ public abstract class BaseDao {
     public final static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
 
 
+    public abstract SqlSession getSqlSession();
+
     // region insert 方法块
 
     /**
@@ -53,7 +57,9 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public abstract int insert(String sqlName, Object obj);
+    public int insert(String sqlName, Object obj){
+        return getSqlSession().insert(sqlName,obj);
+    }
 
     /**
      * 简单插入实体对象
@@ -111,7 +117,9 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public abstract int delete(String sqlName, Object obj);
+    public int delete(String sqlName, Object obj){
+        return getSqlSession().delete(sqlName, obj);
+    }
 
 
     /**
@@ -158,7 +166,9 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public abstract int update(String sqlName, Object obj);
+    public int update(String sqlName, Object obj){
+        return getSqlSession().update(sqlName, obj);
+    }
 
     /**
      * 简单更新实体对象
@@ -233,12 +243,16 @@ public abstract class BaseDao {
     /**
      * 根据sql方法名称取回查询结果列表
      */
-    public abstract List<?> selectList(String sqlName);
+    public List<?> selectList(String sqlName){
+        return getSqlSession().selectList(sqlName);
+    }
 
     /**
      * 根据sql方法名称和条件，取回查询结果列象
      */
-    public abstract List<?> selectList(String sqlName, Object obj);
+    public List<?> selectList(String sqlName, Object obj){
+        return getSqlSession().selectList(sqlName, obj);
+    }
 
 
     /**
