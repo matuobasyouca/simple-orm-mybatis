@@ -8,8 +8,6 @@ import com.software5000.util.BpMybatisException;
 import com.software5000.util.ClassUtil;
 import com.software5000.util.JsqlUtils;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -40,16 +38,10 @@ public abstract class BaseDao {
 
 
     /**
-     * 最终数据库中的字段名大小写规格
+     * 最终数据库中的表/字段名大小写规格
      * true为全部小写，false为全部大写
      */
-    public final static boolean DB_SCHEMES_COLUMN_ALL_LOWER_CASE = true;
-
-    /**
-     * 最终数据库中的表名大小写规格
-     * true为全部小写，false为全部大写
-     */
-    public final static boolean DB_SCHEMES_TABLE_ALL_LOWER_CASE = true;
+    public final static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
 
 
     // region insert 方法块
@@ -69,7 +61,7 @@ public abstract class BaseDao {
      * @param entity 实体对象
      * @return 带id的插入对象
      */
-    public <T> T insertEntity(T entity) {
+    public Object insertEntity(Object entity) {
         Insert insert = new Insert();
         insert.setTable(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
         insert.setColumns(JsqlUtils.getAllColumnNamesFromEntity(entity.getClass()));
@@ -126,31 +118,35 @@ public abstract class BaseDao {
      * 简单删除实体对象
      *
      * @param entity 实体对象
+     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public <T> int deleteEntity(T entity) {
-        return this.deleteEntity(entity.getId(), entity.getClass());
+    public int deleteEntity(Object entity,String queryColumns) {
+        List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
+        List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
+
+        return this.deleteEntityWithNamedColumns(valueColumns,conditionCols,entity);
     }
 
-    /**
-     * 简单删除实体对象
-     *
-     * @param entityClass 实体对象的class
-     * @param id          待删除的id
-     * @return 影响行数
-     */
-    public <T> int deleteEntity(Integer id, Class<T> entityClass) {
+    public int deleteEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity) {
+        if (Iterables.isEmpty(conditionCols)) {
+            throw new BpMybatisException("can't update data without value of condition columns.");
+        }
+
         Delete delete = new Delete();
-        delete.setTable(new Table(JsqlUtils.transCamelToSnake(entityClass.getSimpleName())));
-        EqualsTo equalsTo = new EqualsTo();
-        equalsTo.setLeftExpression(new Column("id"));
-        equalsTo.setRightExpression(new LongValue(id));
-        delete.setWhere(equalsTo);
+        delete.setTables(Arrays.asList(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName()))));
 
-        Map<String, Object> param = new HashMap<>(1);
-        param.put("baseSql", delete.toString());
-        return this.delete("BaseDao.deleteEntity", param);
+        AndExpressionList andExpressionList = new AndExpressionList();
+        conditionCols
+                .forEach(e -> andExpressionList.append(JsqlUtils.equalTo(e, JsqlUtils.getColumnValueFromEntity(entity, e.getColumnName()))));
+
+        delete.setWhere(andExpressionList.get());
+
+        return this.delete("BaseDao.deleteEntity", new HashMap<String, String>() {{
+            put("baseSql", delete.toString());
+        }});
     }
+
     // endregion
 
     // region update 方法块
@@ -168,10 +164,11 @@ public abstract class BaseDao {
      * 简单更新实体对象
      *
      * @param entity 实体对象
+     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public int updateEntity(Object entity) {
-        return updateEntityOnlyHaveValue(entity, true);
+    public int updateEntity(Object entity, String queryColumns) {
+        return updateEntityWithNamedQueryColumn(entity, queryColumns, true);
     }
 
 
@@ -179,10 +176,11 @@ public abstract class BaseDao {
      * 简单更新实体对象
      *
      * @param entities 实体对象
+     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public void updateEntity(List<?> entities) {
-        entities.forEach(entity -> updateEntityOnlyHaveValue(entity, true));
+    public void updateEntity(List<?> entities, String queryColumns) {
+        entities.forEach(entity -> updateEntityWithNamedQueryColumn(entity, queryColumns, true));
     }
 
     /**
@@ -191,35 +189,11 @@ public abstract class BaseDao {
      * @param entity 实体对象
      * @return 影响行数
      */
-    public int updateEntityWithNamedQueryColumn(Object entity, String queryColumns) {
+    public int updateEntityWithNamedQueryColumn(Object entity, String queryColumns, boolean isSupportBlank) {
         List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
         List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
         return updateEntityWithNamedColumns(valueColumns, conditionCols,
-                entity, true);
-    }
-
-    /**
-     * 更新实体对象，根据ID更新，只更新有内容的字段
-     *
-     * @param entity
-     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
-     * @return 影响行数
-     */
-    public int updateEntityOnlyHaveValue(Object entity, boolean isSupportBlank) {
-        if (entity == null || entity.getId() == null || entity.getId() <= 0) {
-            throw new BpMybatisException("can't update data without value of -> id <-.");
-        }
-
-        return this.updateEntityWithNamedColumns(
-                JsqlUtils.getAllColumnNamesFromEntityExceptSome(
-                        entity.getClass(),
-                        Arrays.asList(new String[]{"id"})
-                ),
-                Arrays.asList(new Column("id")),
-                entity,
-                true
-        );
-
+                entity, isSupportBlank);
     }
 
     /**
@@ -294,7 +268,7 @@ public abstract class BaseDao {
 
         // 添加外部条件
         // PS：有添加外部条件的字段，会被清除实体值，防止后续再加入条件
-        andExpressionList.append(conditionWrapper == null ? conditionWrapper.get() : null);
+        andExpressionList.append(conditionWrapper != null ? conditionWrapper.get() : null);
 
         Object[] colsAndValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, null, false, false);
 

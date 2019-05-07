@@ -1,6 +1,7 @@
 package com.software5000.util;
 
 import com.google.common.base.CaseFormat;
+import com.software5000.base.BaseDao;
 import com.software5000.base.NotDatabaseField;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.relational.*;
@@ -171,9 +172,16 @@ public class JsqlUtils {
      * @return 单个字段值
      */
     public static Expression getColumnValueFromEntity(Object entity, String fieldName) {
+        // 如果是蛇形需要转成驼峰
         if (fieldName.indexOf("_") != -1) {
             fieldName = JsqlUtils.transSnakeToCamel(fieldName);
         }
+
+        // 如果是纯大写需要转为纯小写
+        if (fieldName.matches("[A-Z]+")) {
+            fieldName = fieldName.toLowerCase();
+        }
+
         Object returnValue;
         try {
             try {
@@ -363,7 +371,11 @@ public class JsqlUtils {
      * @return 转换后的字符串
      */
     public static String transCamelToSnake(String name) {
-        return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
+        if(BaseDao.DB_SCHEMES_ALL_LOWER_CASE){
+            return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toLowerCase();
+        }else {
+            return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toUpperCase();
+        }
     }
 
     /**

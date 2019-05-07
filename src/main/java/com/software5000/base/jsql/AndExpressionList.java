@@ -1,7 +1,6 @@
 package com.software5000.base.jsql;
 
 
-import com.sun.istack.internal.NotNull;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 
@@ -23,7 +22,7 @@ public class AndExpressionList {
      * @param rightExpression 单个过滤条件
      * @return
      */
-    public AndExpressionList append(@NotNull Expression rightExpression) {
+    public AndExpressionList append(Expression rightExpression) {
         if (singleExpression == null) {
             singleExpression = rightExpression;
             return this;

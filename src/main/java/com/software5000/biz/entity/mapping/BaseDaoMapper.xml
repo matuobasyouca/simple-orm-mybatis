@@ -32,12 +32,4 @@
 		resultType="hashmap">
 		${baseSql}
 	</select>
-
-	<!-- <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String"
-		> -->
-	<!-- select -->
-	<!-- <include refid="Base_Column_List" /> -->
-	<!-- from SystemCode -->
-	<!-- where codeValue = #{codeValue,jdbcType=CHAR} -->
-	<!-- </select> -->
 </mapper>
