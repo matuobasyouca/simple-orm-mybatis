@@ -5,9 +5,8 @@ import com.google.common.collect.Iterables;
 import com.software5000.base.jsql.AndExpressionList;
 import com.software5000.base.jsql.ConditionWrapper;
 import com.software5000.util.BpMybatisException;
+import com.software5000.util.ClassUtil;
 import com.software5000.util.JsqlUtils;
-import com.sun.istack.internal.NotNull;
-import com.zscp.master.util.ClassUtil;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
@@ -20,7 +19,6 @@ import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.binding.MapperMethod;
-import org.mybatis.spring.support.SqlSessionDaoSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +28,7 @@ import java.util.*;
 /**
  * @author matuobasyouca@gmail.com
  */
-public abstract class BaseDao extends SqlSessionDaoSupport {
+public abstract class BaseDao {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -39,6 +37,19 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * 如果数据库结果默认为 camel,则本变量设置为false
      */
     public final static boolean DB_SCHEMES_SNAKE_TYPE = true;
+
+
+    /**
+     * 最终数据库中的字段名大小写规格
+     * true为全部小写，false为全部大写
+     */
+    public final static boolean DB_SCHEMES_COLUMN_ALL_LOWER_CASE = true;
+
+    /**
+     * 最终数据库中的表名大小写规格
+     * true为全部小写，false为全部大写
+     */
+    public final static boolean DB_SCHEMES_TABLE_ALL_LOWER_CASE = true;
 
 
     // region insert 方法块
@@ -50,7 +61,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public abstract int insert(@NotNull String sqlName, @NotNull Object obj);
+    public abstract int insert(String sqlName, Object obj);
 
     /**
      * 简单插入实体对象
@@ -58,7 +69,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entity 实体对象
      * @return 带id的插入对象
      */
-    public <T extends BaseEntity> T insertEntity(@NotNull T entity) {
+    public <T> T insertEntity(T entity) {
         Insert insert = new Insert();
         insert.setTable(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
         insert.setColumns(JsqlUtils.getAllColumnNamesFromEntity(entity.getClass()));
@@ -79,7 +90,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entities 待插入的实体列表
      * @return 带id的插入对象列表
      */
-    public List insertEntity(@NotNull List<? extends BaseEntity> entities) {
+    public List insertEntity(List<?> entities) {
         if (entities == null || entities.size() == 0) {
             return null;
         }
@@ -108,9 +119,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public int delete(@NotNull String sqlName, @NotNull Object obj) {
-        return getSqlSession().delete(sqlName, obj);
-    }
+    public abstract int delete(String sqlName, Object obj);
 
 
     /**
@@ -119,7 +128,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entity 实体对象
      * @return 影响行数
      */
-    public <T extends BaseEntity> int deleteEntity(@NotNull T entity) {
+    public <T> int deleteEntity(T entity) {
         return this.deleteEntity(entity.getId(), entity.getClass());
     }
 
@@ -130,7 +139,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param id          待删除的id
      * @return 影响行数
      */
-    public <T extends BaseEntity> int deleteEntity(@NotNull Integer id, @NotNull Class<T> entityClass) {
+    public <T> int deleteEntity(Integer id, Class<T> entityClass) {
         Delete delete = new Delete();
         delete.setTable(new Table(JsqlUtils.transCamelToSnake(entityClass.getSimpleName())));
         EqualsTo equalsTo = new EqualsTo();
@@ -153,9 +162,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public int update(@NotNull String sqlName, @NotNull Object obj) {
-        return getSqlSession().update(sqlName, obj);
-    }
+    public abstract int update(String sqlName, Object obj);
 
     /**
      * 简单更新实体对象
@@ -163,7 +170,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entity 实体对象
      * @return 影响行数
      */
-    public int updateEntity(@NotNull BaseEntity entity) {
+    public int updateEntity(Object entity) {
         return updateEntityOnlyHaveValue(entity, true);
     }
 
@@ -174,7 +181,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entities 实体对象
      * @return 影响行数
      */
-    public void updateEntity(@NotNull List<? extends BaseEntity> entities) {
+    public void updateEntity(List<?> entities) {
         entities.forEach(entity -> updateEntityOnlyHaveValue(entity, true));
     }
 
@@ -184,7 +191,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entity 实体对象
      * @return 影响行数
      */
-    public int updateEntityWithNamedQueryColumn(@NotNull BaseEntity entity, @NotNull String queryColumns) {
+    public int updateEntityWithNamedQueryColumn(Object entity, String queryColumns) {
         List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
         List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
         return updateEntityWithNamedColumns(valueColumns, conditionCols,
@@ -198,7 +205,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      * @return 影响行数
      */
-    public int updateEntityOnlyHaveValue(@NotNull BaseEntity entity, @NotNull boolean isSupportBlank) {
+    public int updateEntityOnlyHaveValue(Object entity, boolean isSupportBlank) {
         if (entity == null || entity.getId() == null || entity.getId() <= 0) {
             throw new BpMybatisException("can't update data without value of -> id <-.");
         }
@@ -224,7 +231,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      * @return 影响行数
      */
-    public int updateEntityWithNamedColumns(List<Column> valueCols, @NotNull List<Column> conditionCols, @NotNull BaseEntity entity, @NotNull boolean isSupportBlank) {
+    public int updateEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity, boolean isSupportBlank) {
         if (Iterables.isEmpty(conditionCols)) {
             throw new BpMybatisException("can't update data without value of condition columns.");
         }
@@ -252,16 +259,12 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
     /**
      * 根据sql方法名称取回查询结果列表
      */
-    public List<?> selectList(@NotNull String sqlName) {
-        return getSqlSession().selectList(sqlName);
-    }
+    public abstract List<?> selectList(String sqlName);
 
     /**
      * 根据sql方法名称和条件，取回查询结果列象
      */
-    public List<?> selectList(@NotNull String sqlName, @NotNull Object obj) {
-        return getSqlSession().selectList(sqlName, obj);
-    }
+    public abstract List<?> selectList(String sqlName, Object obj);
 
 
     /**
@@ -269,7 +272,7 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      *
      * @param entity
      */
-    public <T extends BaseEntity> List<T> selectEntity(@NotNull T entity) {
+    public <T> List<T> selectEntity(T entity) {
         return selectEntity(entity, null);
     }
 
@@ -279,11 +282,11 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      * @param entity
      * @param orderBy 排序字段
      */
-    public <T extends BaseEntity> List<T> selectEntity(@NotNull T entity, @NotNull String orderBy) {
+    public <T> List<T> selectEntity(T entity, String orderBy) {
         return selectEntity(entity, null, orderBy);
     }
 
-    public <T extends BaseEntity> List<T> selectEntity(@NotNull T entity, ConditionWrapper conditionWrapper, String orderBy) {
+    public <T> List<T> selectEntity(T entity, ConditionWrapper conditionWrapper, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
         plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
         plainSelect.setFromItem(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
@@ -316,20 +319,19 @@ public abstract class BaseDao extends SqlSessionDaoSupport {
      *
      * @param entity     参数实体，用于新建结果实体类
      * @param lastResult sql查询的结果集
-     * @param <T>        BaseEntity类型
      * @return 返回填充后的实体列表
      */
-    private <T extends BaseEntity> List<T> fillEntities(@NotNull T entity, @NotNull List lastResult) {
+    private <T> List<T> fillEntities(T entity, List lastResult) {
         List<?> result;
         if (lastResult instanceof Page) {
             result = ((Page) lastResult).getResult();
         } else {
             result = lastResult;
         }
-        List<BaseEntity> tempList = new ArrayList<>();
+        List<Object> tempList = new ArrayList<>();
         for (Object sr : result) {
             try {
-                BaseEntity singleResult = (BaseEntity) Class.forName(entity.getClass().getName()).newInstance();
+                Object singleResult = (Object) Class.forName(entity.getClass().getName()).newInstance();
 
                 for (String key : ((Map<String, Object>) sr).keySet()) {
 

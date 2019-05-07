@@ -1,7 +1,6 @@
 package com.software5000.util.bean;
 
-
-import com.zscp.master.util.ClassUtil;
+import com.software5000.util.ClassUtil;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
