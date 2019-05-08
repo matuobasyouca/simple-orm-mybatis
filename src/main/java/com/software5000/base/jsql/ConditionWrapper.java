@@ -24,7 +24,7 @@ public class ConditionWrapper<T extends Object> {
     /**
      * 需要传入实体用于初始化类
      *
-     * @param entity
+     * @param entity 待操作实体
      */
     public ConditionWrapper(T entity) {
         this.entity = entity;
@@ -34,7 +34,7 @@ public class ConditionWrapper<T extends Object> {
     /**
      * 获取拼接后的查询条件,并且清除对应栏位的值
      *
-     * @return
+     * @return 拼接后的查询条件
      */
     public Expression get() {
         cleanEntityValue();

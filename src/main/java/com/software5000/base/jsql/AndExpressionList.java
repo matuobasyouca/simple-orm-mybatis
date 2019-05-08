@@ -20,7 +20,7 @@ public class AndExpressionList {
      * 添加单个过滤条件表达式
      *
      * @param rightExpression 单个过滤条件
-     * @return
+     * @return 合并的and表达式
      */
     public AndExpressionList append(Expression rightExpression) {
         if (singleExpression == null) {
@@ -40,7 +40,7 @@ public class AndExpressionList {
      * 添加过滤条件列表
      *
      * @param expressions 过滤条件列表
-     * @return
+     * @return  合并的and表达式，并且返回自身用于多级操作
      */
     public AndExpression appendListAndGet(List<Expression> expressions) {
         for (Expression expression : expressions) {
@@ -52,7 +52,7 @@ public class AndExpressionList {
     /**
      * 获取最终的完整过滤条件
      *
-     * @return
+     * @return 最终的完整过滤条件
      */
     public Expression get() {
         return andExpression == null ? singleExpression: andExpression;

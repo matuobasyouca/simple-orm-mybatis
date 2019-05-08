@@ -167,8 +167,8 @@ public class JsqlUtils {
     /**
      * 根据给出的实体，获取对应字段的值
      *
-     * @param entity
-     * @param fieldName
+     * @param entity 待操作实体
+     * @param fieldName 数据库字段名称
      * @return 单个字段值
      */
     public static Expression getColumnValueFromEntity(Object entity, String fieldName) {
@@ -368,6 +368,8 @@ public class JsqlUtils {
     /**
      * 骆驼转蛇
      *
+     * @param name 待转换的字符串
+     *
      * @return 转换后的字符串
      */
     public static String transCamelToSnake(String name) {
@@ -380,6 +382,8 @@ public class JsqlUtils {
 
     /**
      * 蛇转骆驼
+     *
+     * @param name 待转换的字符串
      *
      * @return 转换后的字符串
      */

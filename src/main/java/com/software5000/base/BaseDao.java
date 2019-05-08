@@ -18,7 +18,6 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +25,8 @@ import java.util.*;
 
 
 /**
+ * 抽象基础的Dao封装类
+ *
  * @author matuobasyouca@gmail.com
  */
 public abstract class BaseDao {
@@ -46,6 +47,10 @@ public abstract class BaseDao {
     public final static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
 
 
+    /**
+     * 获取mybatis中的SqlSession，用于基础增删改查操作
+     * @return mybatis中的SqlSession
+     */
     public abstract SqlSession getSqlSession();
 
     // region insert 方法块
@@ -57,8 +62,8 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public int insert(String sqlName, Object obj){
-        return getSqlSession().insert(sqlName,obj);
+    public int insert(String sqlName, Object obj) {
+        return getSqlSession().insert(sqlName, obj);
     }
 
     /**
@@ -117,7 +122,7 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public int delete(String sqlName, Object obj){
+    public int delete(String sqlName, Object obj) {
         return getSqlSession().delete(sqlName, obj);
     }
 
@@ -125,15 +130,15 @@ public abstract class BaseDao {
     /**
      * 简单删除实体对象
      *
-     * @param entity 实体对象
+     * @param entity       实体对象
      * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public int deleteEntity(Object entity,String queryColumns) {
+    public int deleteEntity(Object entity, String queryColumns) {
         List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
         List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
 
-        return this.deleteEntityWithNamedColumns(valueColumns,conditionCols,entity);
+        return this.deleteEntityWithNamedColumns(valueColumns, conditionCols, entity);
     }
 
     public int deleteEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity) {
@@ -166,14 +171,14 @@ public abstract class BaseDao {
      * @param obj     传入操作对象
      * @return 影响行数
      */
-    public int update(String sqlName, Object obj){
+    public int update(String sqlName, Object obj) {
         return getSqlSession().update(sqlName, obj);
     }
 
     /**
      * 简单更新实体对象
      *
-     * @param entity 实体对象
+     * @param entity       实体对象
      * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
@@ -185,9 +190,8 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entities 实体对象
+     * @param entities     实体对象
      * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
-     * @return 影响行数
      */
     public void updateEntity(List<?> entities, String queryColumns) {
         entities.forEach(entity -> updateEntityWithNamedQueryColumn(entity, queryColumns, true));
@@ -196,7 +200,9 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entity 实体对象
+     * @param entity         实体对象
+     * @param queryColumns   作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      * @return 影响行数
      */
     public int updateEntityWithNamedQueryColumn(Object entity, String queryColumns, boolean isSupportBlank) {
@@ -242,39 +248,57 @@ public abstract class BaseDao {
 
     /**
      * 根据sql方法名称取回查询结果列表
+     *
+     * @param sqlName xml中的sql id
+     * @return 返回实体列表
      */
-    public List<?> selectList(String sqlName){
+    public List<?> selectList(String sqlName) {
         return getSqlSession().selectList(sqlName);
     }
 
     /**
      * 根据sql方法名称和条件，取回查询结果列象
+     *
+     * @param sqlName xml中的sql id
+     * @param entity  待操作实体
+     * @return 返回实体列表
      */
-    public List<?> selectList(String sqlName, Object obj){
-        return getSqlSession().selectList(sqlName, obj);
+    public List<?> selectList(String sqlName, Object entity) {
+        return getSqlSession().selectList(sqlName, entity);
     }
 
 
     /**
      * 简单加载实体对象
      *
-     * @param entity
+     * @param entity 待操作实体
+     * @return 返回实体列表
      */
-    public <T> List<T> selectEntity(T entity) {
+    public List<Object> selectEntity(Object entity) {
         return selectEntity(entity, null);
     }
 
     /**
      * 简单加载实体对象
      *
-     * @param entity
+     * @param entity  待操作实体
      * @param orderBy 排序字段
+     * @return 返回实体列表
      */
-    public <T> List<T> selectEntity(T entity, String orderBy) {
+    public List<Object> selectEntity(Object entity, String orderBy) {
         return selectEntity(entity, null, orderBy);
     }
 
-    public <T> List<T> selectEntity(T entity, ConditionWrapper conditionWrapper, String orderBy) {
+
+    /**
+     * 添加外部条件的简单加载实体对象
+     *
+     * @param entity           待操作实体
+     * @param conditionWrapper 外部封装条件
+     * @param orderBy          排序字段
+     * @return 返回实体列表
+     */
+    public List<Object> selectEntity(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
         plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
         plainSelect.setFromItem(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
@@ -309,7 +333,7 @@ public abstract class BaseDao {
      * @param lastResult sql查询的结果集
      * @return 返回填充后的实体列表
      */
-    private <T> List<T> fillEntities(T entity, List lastResult) {
+    private List<Object> fillEntities(Object entity, List lastResult) {
         List<?> result;
         if (lastResult instanceof Page) {
             result = ((Page) lastResult).getResult();
