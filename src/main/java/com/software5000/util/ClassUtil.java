@@ -4,6 +4,7 @@ import com.github.pagehelper.util.StringUtil;
 import com.software5000.util.bean.BasicType;
 import com.software5000.util.bean.Singleton;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -581,8 +582,8 @@ public final class ClassUtil {
             return entity.getClass().getDeclaredMethod(("set" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1)), entity.getClass().getDeclaredField(fieldName).getType()).invoke(entity, value);
         } catch (NoSuchFieldException e) {
             return entity.getClass().getSuperclass().getDeclaredMethod(("set" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1)), entity.getClass().getSuperclass().getDeclaredField(fieldName).getType()).invoke(entity, value);
-        } catch (IllegalArgumentException e){
-            throw new BpMybatisException("processing entity setter value error, entity : ["+entity.getClass().getName()+"] key : ["+fieldName+"] , from type ["+value.getClass().getName()+"] set to type ["+entity.getClass().getDeclaredField(fieldName).getType().getName()+"]");
+        } catch (IllegalArgumentException e) {
+            throw new BpMybatisException("processing entity setter value error, entity : [" + entity.getClass().getName() + "] key : [" + fieldName + "] , from type [" + value.getClass().getName() + "] set to type [" + entity.getClass().getDeclaredField(fieldName).getType().getName() + "]");
         }
     }
 
@@ -684,13 +685,13 @@ public final class ClassUtil {
      * @param <T>   类型
      * @param clazz 类名
      * @return 对象
-     * @throws Exception 异常
+     * @throws BpMybatisException 异常
      */
-    public static <T> T newInstance(String clazz) throws Exception {
+    public static <T> T newInstance(String clazz) throws BpMybatisException {
         try {
             return (T) Class.forName(clazz).newInstance();
         } catch (Exception e) {
-            throw new Exception(String.format("Instance class [%s] error!", clazz), e);
+            throw new BpMybatisException(String.format("Instance class [%s] error!", clazz), e);
         }
     }
 
@@ -700,13 +701,13 @@ public final class ClassUtil {
      * @param <T>   类型
      * @param clazz 类
      * @return 对象
-     * @throws Exception 异常
+     * @throws BpMybatisException 异常
      */
-    public static <T> T newInstance(Class<T> clazz) throws Exception {
+    public static <T> T newInstance(Class<T> clazz) throws BpMybatisException {
         try {
             return (T) clazz.newInstance();
         } catch (Exception e) {
-            throw new Exception(String.format("Instance class [%s] error!", clazz), e);
+            throw new BpMybatisException(String.format("Instance class [%s] error!", clazz), e);
         }
     }
 
@@ -717,9 +718,9 @@ public final class ClassUtil {
      * @param clazz  类
      * @param params 参数
      * @return 对象
-     * @throws Exception 异常
+     * @throws BpMybatisException 异常
      */
-    public static <T> T newInstance(Class<T> clazz, Object... params) throws Exception {
+    public static <T> T newInstance(Class<T> clazz, Object... params) throws BpMybatisException {
         if (params == null || params.length == 0) {
             return newInstance(clazz);
         }
@@ -727,13 +728,43 @@ public final class ClassUtil {
         final Class<?>[] paramTypes = getClasses(params);
         final Constructor<?> constructor = getConstructor(clazz, getClasses(params));
         if (null == constructor) {
-            throw new Exception(String.format("No Constructor matched for parameter types: [%s]", new Object[]{paramTypes}));
+            throw new BpMybatisException(String.format("No Constructor matched for parameter types: [%s]", new Object[]{paramTypes}));
         }
         try {
             return getConstructor(clazz, paramTypes).newInstance(params);
         } catch (Exception e) {
-            throw new Exception(String.format("Instance class [%s] error!", clazz), e);
+            throw new BpMybatisException(String.format("Instance class [%s] error!", clazz), e);
         }
+    }
+
+    /**
+     * 将转入的map参数转为多个实例
+     *
+     * @param source 待转换map
+     * @param classes 待设值类型
+     * @return 根据传入的类的顺序返回的实例对象数组
+     * @throws BpMybatisException
+     */
+    public static Object[] transformMapToMuiltiObject(@Nonnull Map<String,?> source, Class[] classes) throws BpMybatisException {
+        Object[] last = new Object[classes.length];
+
+        for (int clzIndex = 0; clzIndex < classes.length; clzIndex++) {
+            last[clzIndex] = ClassUtil.newInstance(classes[clzIndex].getName());
+        }
+
+        for (String key : source.keySet()) {
+            for (Object o : last) {
+                try {
+                    ClassUtil.setValueByField(o, key, source.get(key));
+                } catch (NoSuchMethodException | NoSuchFieldException e) {
+                    // 假如没有对应字段无需处理
+                } catch (Exception e) {
+                    throw new BpMybatisException(e);
+                }
+            }
+        }
+
+        return last;
     }
 
     /**
@@ -827,9 +858,9 @@ public final class ClassUtil {
      * @param classNameDotMethodName 类名和方法名表达式，例如：com.xiaoleilu.hutool.StrUtil.isEmpty
      * @param args                   参数，必须严格对应指定方法的参数类型和数量
      * @return 返回结果
-     * @throws Exception 执行可能出现异常
+     * @throws BpMybatisException 执行可能出现异常
      */
-    public static <T> T invoke(String classNameDotMethodName, Object[] args) throws Exception {
+    public static <T> T invoke(String classNameDotMethodName, Object[] args) throws BpMybatisException {
         return invoke(classNameDotMethodName, false, args);
     }
 
@@ -843,15 +874,15 @@ public final class ClassUtil {
      * @param isSingleton            是否为单例对象，如果此参数为false，每次执行方法时创建一个新对象
      * @param args                   参数，必须严格对应指定方法的参数类型和数量
      * @return 返回结果
-     * @throws Exception 执行可能出现异常
+     * @throws BpMybatisException 执行可能出现异常
      */
-    public static <T> T invoke(String classNameDotMethodName, boolean isSingleton, Object[] args) throws Exception {
+    public static <T> T invoke(String classNameDotMethodName, boolean isSingleton, Object[] args) throws BpMybatisException {
         if (ValidUtil.isEmpty(classNameDotMethodName)) {
-            throw new Exception("Blank classNameDotMethodName!");
+            throw new BpMybatisException("Blank classNameDotMethodName!");
         }
         final int dotIndex = classNameDotMethodName.lastIndexOf('.');
         if (dotIndex <= 0) {
-            throw new Exception(String.format("Invalid classNameDotMethodName [%s]!", classNameDotMethodName));
+            throw new BpMybatisException(String.format("Invalid classNameDotMethodName [%s]!", classNameDotMethodName));
         }
 
         final String className = classNameDotMethodName.substring(0, dotIndex);
@@ -871,9 +902,9 @@ public final class ClassUtil {
      * @param methodName 方法名
      * @param args       参数，必须严格对应指定方法的参数类型和数量
      * @return 返回结果
-     * @throws Exception 执行可能出现异常
+     * @throws BpMybatisException 执行可能出现异常
      */
-    public static <T> T invoke(String className, String methodName, Object[] args) throws Exception {
+    public static <T> T invoke(String className, String methodName, Object[] args) throws BpMybatisException {
         return invoke(className, methodName, false, args);
     }
 
@@ -888,14 +919,14 @@ public final class ClassUtil {
      * @param isSingleton 是否为单例对象，如果此参数为false，每次执行方法时创建一个新对象
      * @param args        参数，必须严格对应指定方法的参数类型和数量
      * @return 返回结果
-     * @throws Exception 执行可能出现异常
+     * @throws BpMybatisException 执行可能出现异常
      */
-    public static <T> T invoke(String className, String methodName, boolean isSingleton, Object[] args) throws Exception {
+    public static <T> T invoke(String className, String methodName, boolean isSingleton, Object[] args) throws BpMybatisException {
         Class<Object> clazz = loadClass(className);
         try {
             return invoke(isSingleton ? Singleton.get(clazz) : clazz.newInstance(), methodName, args);
         } catch (Exception e) {
-            throw e;
+            throw new BpMybatisException(e);
         }
     }
 
@@ -908,9 +939,9 @@ public final class ClassUtil {
      * @param methodName 方法名
      * @param args       参数，必须严格对应指定方法的参数类型和数量
      * @return 返回结果
-     * @throws Exception 执行可能出现异常
+     * @throws BpMybatisException 执行可能出现异常
      */
-    public static <T> T invoke(Object obj, String methodName, Object[] args) throws Exception {
+    public static <T> T invoke(Object obj, String methodName, Object[] args) throws BpMybatisException {
         try {
             final Method method = getDeclaredMethod(obj, methodName, args);
             if (null == method) {
@@ -918,7 +949,7 @@ public final class ClassUtil {
             }
             return invoke(obj, method, args);
         } catch (Exception e) {
-            throw e;
+            throw new BpMybatisException(e);
         }
     }
 
