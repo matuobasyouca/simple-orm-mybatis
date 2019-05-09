@@ -252,7 +252,7 @@ public abstract class BaseDao {
      * @param sqlName xml中的sql id
      * @return 返回实体列表
      */
-    public List<?> selectList(String sqlName) {
+    public List selectList(String sqlName) {
         return getSqlSession().selectList(sqlName);
     }
 
@@ -263,7 +263,7 @@ public abstract class BaseDao {
      * @param entity  待操作实体
      * @return 返回实体列表
      */
-    public List<?> selectList(String sqlName, Object entity) {
+    public List selectList(String sqlName, Object entity) {
         return getSqlSession().selectList(sqlName, entity);
     }
 
@@ -274,7 +274,7 @@ public abstract class BaseDao {
      * @param entity 待操作实体
      * @return 返回实体列表
      */
-    public List<Object> selectEntity(Object entity) {
+    public List selectEntity(Object entity) {
         return selectEntity(entity, null);
     }
 
@@ -285,7 +285,7 @@ public abstract class BaseDao {
      * @param orderBy 排序字段
      * @return 返回实体列表
      */
-    public List<Object> selectEntity(Object entity, String orderBy) {
+    public List selectEntity(Object entity, String orderBy) {
         return selectEntity(entity, null, orderBy);
     }
 
@@ -298,7 +298,7 @@ public abstract class BaseDao {
      * @param orderBy          排序字段
      * @return 返回实体列表
      */
-    public List<Object> selectEntity(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
+    public List selectEntity(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
         plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
         plainSelect.setFromItem(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
@@ -333,7 +333,7 @@ public abstract class BaseDao {
      * @param lastResult sql查询的结果集
      * @return 返回填充后的实体列表
      */
-    private List<Object> fillEntities(Object entity, List lastResult) {
+    private List fillEntities(Object entity, List lastResult) {
         List<?> result;
         if (lastResult instanceof Page) {
             result = ((Page) lastResult).getResult();
