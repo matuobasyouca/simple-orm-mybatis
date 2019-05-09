@@ -147,6 +147,11 @@ public class JsqlUtils {
         for (Column column : namedCols) {
             Expression expression = JsqlUtils.getColumnValueFromEntity(entity, column.getColumnName());
 
+            // 空对象需要跳过
+            if(expression==null){
+                continue;
+            }
+
             // 确认null是否接收
             if (!isSupportNull && expression instanceof NullValue) {
                 continue;
@@ -182,12 +187,21 @@ public class JsqlUtils {
             fieldName = fieldName.toLowerCase();
         }
 
+        // 如果是全局忽略的字段则直接跳过
+        if(BaseDao.IGNORE_FILEDNAMES.indexOf(fieldName)>-1){
+            return null;
+        }
+
         Object returnValue;
         try {
+            String getterMethodName = "get" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1);
+//            if(fieldName.startsWith("is")){
+//                getterMethodName=fieldName;
+//            }
             try {
-                returnValue = entity.getClass().getDeclaredMethod("get" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1)).invoke(entity);
+                returnValue = entity.getClass().getDeclaredMethod(getterMethodName).invoke(entity);
             } catch (NoSuchMethodException nsme) {
-                Method method = entity.getClass().getSuperclass().getDeclaredMethod("get" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1));
+                Method method = entity.getClass().getSuperclass().getDeclaredMethod(getterMethodName);
                 returnValue = method.invoke(entity);
             }
         } catch (NoSuchMethodException e) {

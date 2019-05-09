@@ -46,9 +46,15 @@ public abstract class BaseDao {
      */
     public final static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
 
+    /**
+     * 全局忽略的字符串
+     */
+    public final static String IGNORE_FILEDNAMES = "serialVersionUID";
+
 
     /**
      * 获取mybatis中的SqlSession，用于基础增删改查操作
+     *
      * @return mybatis中的SqlSession
      */
     public abstract SqlSession getSqlSession();
@@ -347,7 +353,11 @@ public abstract class BaseDao {
 
                 for (String key : ((Map<String, Object>) sr).keySet()) {
 
-                    ClassUtil.setValueByField(singleResult, JsqlUtils.transSnakeToCamel(key), ((Map<String, Object>) sr).get(key));
+                    try {
+                        ClassUtil.setValueByField(singleResult, JsqlUtils.transSnakeToCamel(key), ((Map<String, Object>) sr).get(key));
+                    } catch (Exception e) {
+                        logger.error("processing entity setter value error, key : ["+key+"] entity : [" + entity.getClass().getName() + "] ", e);
+                    }
                 }
 
                 tempList.add(singleResult);

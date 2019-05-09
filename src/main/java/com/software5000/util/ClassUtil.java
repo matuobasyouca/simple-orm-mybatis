@@ -581,6 +581,8 @@ public final class ClassUtil {
             return entity.getClass().getDeclaredMethod(("set" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1)), entity.getClass().getDeclaredField(fieldName).getType()).invoke(entity, value);
         } catch (NoSuchFieldException e) {
             return entity.getClass().getSuperclass().getDeclaredMethod(("set" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1)), entity.getClass().getSuperclass().getDeclaredField(fieldName).getType()).invoke(entity, value);
+        } catch (IllegalArgumentException e){
+            throw new BpMybatisException("processing entity setter value error, entity : ["+entity.getClass().getName()+"] key : ["+fieldName+"] , from type ["+value.getClass().getName()+"] set to type ["+entity.getClass().getDeclaredField(fieldName).getType().getName()+"]");
         }
     }
 
