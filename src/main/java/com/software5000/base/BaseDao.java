@@ -99,7 +99,7 @@ public abstract class BaseDao {
      * @param entities 待插入的实体列表
      * @return 带id的插入对象列表
      */
-    public List insertEntity(List<?> entities) {
+    public List insertEntities(List<?> entities) {
         if (entities == null || entities.size() == 0) {
             return null;
         }
@@ -137,17 +137,12 @@ public abstract class BaseDao {
      * 简单删除实体对象
      *
      * @param entity       实体对象
-     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public int deleteEntity(Object entity, String queryColumns) {
-        List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
-        List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
+    public int deleteEntity(Object entity, String queryFields) {
+        List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryFields.split(",")));
 
-        return this.deleteEntityWithNamedColumns(valueColumns, conditionCols, entity);
-    }
-
-    public int deleteEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity) {
         if (Iterables.isEmpty(conditionCols)) {
             throw new BpMybatisException("can't update data without value of condition columns.");
         }
@@ -185,11 +180,26 @@ public abstract class BaseDao {
      * 简单更新实体对象
      *
      * @param entity       实体对象
-     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
-    public int updateEntity(Object entity, String queryColumns) {
-        return updateEntityWithNamedQueryColumn(entity, queryColumns, true);
+    public int updateEntity(Object entity, String queryFields) {
+        return updateEntity(entity, queryFields, true);
+    }
+
+    /**
+     * 简单更新实体对象
+     *
+     * @param entity         实体对象
+     * @param queryFields   作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
+     * @return 影响行数
+     */
+    public int updateEntity(Object entity, String queryFields, boolean isSupportBlank) {
+        List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryFields.split(",")));
+        List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryFields.split(",")));
+        return updateEntityWithNamedColumns(valueColumns, conditionCols,
+                entity, isSupportBlank);
     }
 
 
@@ -197,25 +207,22 @@ public abstract class BaseDao {
      * 简单更新实体对象
      *
      * @param entities     实体对象
-     * @param queryColumns 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      */
-    public void updateEntity(List<?> entities, String queryColumns) {
-        entities.forEach(entity -> updateEntityWithNamedQueryColumn(entity, queryColumns, true));
+    public void updateEntities(List<?> entities, String queryFields) {
+        entities.forEach(entity -> updateEntity(entity, queryFields, true));
     }
+
 
     /**
      * 简单更新实体对象
      *
-     * @param entity         实体对象
-     * @param queryColumns   作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param entities     实体对象
+     * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
-     * @return 影响行数
      */
-    public int updateEntityWithNamedQueryColumn(Object entity, String queryColumns, boolean isSupportBlank) {
-        List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryColumns.split(",")));
-        List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryColumns.split(",")));
-        return updateEntityWithNamedColumns(valueColumns, conditionCols,
-                entity, isSupportBlank);
+    public void updateEntities(List<?> entities, String queryFields, boolean isSupportBlank) {
+        entities.forEach(entity -> updateEntity(entity, queryFields, isSupportBlank));
     }
 
     /**
@@ -227,7 +234,7 @@ public abstract class BaseDao {
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      * @return 影响行数
      */
-    public int updateEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity, boolean isSupportBlank) {
+    private int updateEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity, boolean isSupportBlank) {
         if (Iterables.isEmpty(conditionCols)) {
             throw new BpMybatisException("can't update data without value of condition columns.");
         }
@@ -244,7 +251,7 @@ public abstract class BaseDao {
 
         update.setWhere(andExpressionList.get());
 
-        return this.update("BaseDao.updateEntity", new HashMap<String, String>() {{
+        return this.update("BaseDao.updateEntities", new HashMap<String, String>() {{
             put("baseSql", update.toString());
         }});
     }

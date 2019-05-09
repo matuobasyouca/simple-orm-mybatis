@@ -1,5 +1,7 @@
 这个项目期望是在Mybatis之上做一层简化封装，能够通过后台直接生成sql语句执行针对单表的增删改查语句并且执行。
 
+[查看详细说明文档](https://github.com/matuobasyouca/simple-orm-mybatis/wiki)
+
 # 使用的基础工作
 
 1. 首先引入依赖
