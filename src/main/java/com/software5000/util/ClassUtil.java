@@ -1,6 +1,5 @@
 package com.software5000.util;
 
-import com.github.pagehelper.util.StringUtil;
 import com.software5000.util.bean.BasicType;
 import com.software5000.util.bean.Singleton;
 
@@ -20,7 +19,8 @@ public final class ClassUtil {
 
     public static final char INNER_CLASS_SEPARATOR_CHAR = '$';
     public static final char PACKAGE_SEPARATOR_CHAR = '.';
-    private static final Map<String, String> reverseAbbreviationMap;
+    public static final char UNDERLINE_CHAR = '_';
+    private static final Map<String, String> REVERSE_ABBREVIATION_MAP;
 
     static {
         final Map<String, String> m = new HashMap<String, String>();
@@ -36,7 +36,7 @@ public final class ClassUtil {
         for (final Map.Entry<String, String> e : m.entrySet()) {
             r.put(e.getValue(), e.getKey());
         }
-        reverseAbbreviationMap = Collections.unmodifiableMap(r);
+        REVERSE_ABBREVIATION_MAP = Collections.unmodifiableMap(r);
     }
 
     /**
@@ -340,7 +340,7 @@ public final class ClassUtil {
         List<String> list = new ArrayList<>();
         Class superclass = classz.getSuperclass();
         String superName = superclass.getName();
-        if (!"java.lang.Object".equals(superName)) {
+        if (!Object.class.getName().equals(superName)) {
             list.add(superName);
             list.addAll(Arrays.asList(getSuperClassChian(superName)));
         } else {
@@ -424,8 +424,8 @@ public final class ClassUtil {
                 className = className.substring(1, className.length() - 1);
             }
 
-            if (reverseAbbreviationMap.containsKey(className)) {
-                className = reverseAbbreviationMap.get(className);
+            if (REVERSE_ABBREVIATION_MAP.containsKey(className)) {
+                className = REVERSE_ABBREVIATION_MAP.get(className);
             }
         }
 
@@ -448,7 +448,9 @@ public final class ClassUtil {
      * <code>Object.class</code>
      */
     public static Class<?> getSuperClassGenricType(Class<?> clazz, int index) {
-        Type genType = clazz.getGenericSuperclass();// 得到泛型父类
+        // 得到泛型父类
+        Type genType = clazz.getGenericSuperclass();
+
         // 如果没有实现ParameterizedType接口，即不支持泛型，直接返回Object.class
         if (!(genType instanceof ParameterizedType)) {
             return Object.class;
@@ -676,7 +678,7 @@ public final class ClassUtil {
         if (null == clazz) {
             return false;
         }
-        return BasicType.wrapperPrimitiveMap.containsKey(clazz);
+        return BasicType.WRAPPER_PRIMITIVE_MAP.containsKey(clazz);
     }
 
     /**

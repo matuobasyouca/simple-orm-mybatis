@@ -79,7 +79,7 @@ public class ConditionWrapper<T extends Object> {
             value = JsqlUtils.getColumnValueFromEntity(this.entity, fieldName);
         }
 
-        this.andExpressionList.append(JsqlUtils.equalTo(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.equalTo(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -106,7 +106,7 @@ public class ConditionWrapper<T extends Object> {
             value = JsqlUtils.getColumnValueFromEntity(this.entity, fieldName);
         }
 
-        this.andExpressionList.append(JsqlUtils.greaterThan(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.greaterThan(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -133,7 +133,7 @@ public class ConditionWrapper<T extends Object> {
             value = JsqlUtils.getColumnValueFromEntity(this.entity, fieldName);
         }
 
-        this.andExpressionList.append(JsqlUtils.greaterThanEquals(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.greaterThanEquals(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -161,7 +161,7 @@ public class ConditionWrapper<T extends Object> {
             value = JsqlUtils.getColumnValueFromEntity(this.entity, fieldName);
         }
 
-        this.andExpressionList.append(JsqlUtils.lessThan(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.lessThan(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -188,7 +188,7 @@ public class ConditionWrapper<T extends Object> {
             value = JsqlUtils.getColumnValueFromEntity(this.entity, fieldName);
         }
 
-        this.andExpressionList.append(JsqlUtils.lessThanEquals(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.lessThanEquals(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -205,7 +205,7 @@ public class ConditionWrapper<T extends Object> {
             throw new BpMybatisException("the 'in' condition can't query with null value");
         }
 
-        this.andExpressionList.append(JsqlUtils.in(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.in(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }
@@ -222,7 +222,7 @@ public class ConditionWrapper<T extends Object> {
             throw new BpMybatisException("the 'in' condition can't query with null value");
         }
 
-        this.andExpressionList.append(JsqlUtils.notIn(new Column(JsqlUtils.transCamelToSnake(fieldName)), value));
+        this.andExpressionList.append(JsqlUtils.notIn(new Column(JsqlUtils.transDbSchemesType(fieldName)), value));
         needCleanFields.add(fieldName);
         return this;
     }

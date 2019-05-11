@@ -103,7 +103,7 @@ public final class ValidUtil {
      * @return 是否为空
      */
     public final static boolean valid(Object obj) {
-        return !(null == obj);
+        return null != obj;
     }
 
     /**
@@ -390,15 +390,15 @@ public final class ValidUtil {
      * @return 是否纯字母组合的标志
      */
     public final static boolean isABC(String src) {
-        boolean return_value = false;
+        boolean returnValue = false;
         if (src != null && src.length() > 0) {
             final String regex = "^[a-z|A-Z]+$";
             Matcher m = Pattern.compile(regex).matcher(src);
             if (m.find()) {
-                return_value = true;
+                returnValue = true;
             }
         }
-        return return_value;
+        return returnValue;
     }
 
     /**
@@ -408,15 +408,15 @@ public final class ValidUtil {
      * @return 是否数字的标志
      */
     public final static boolean isFloatNumeric(String src) {
-        boolean return_value = false;
+        boolean returnValue = false;
         if (src != null && src.length() > 0) {
             final String regex = "^[0-9\\-\\.]+$";
             Matcher m = Pattern.compile(regex).matcher(src);
             if (m.find()) {
-                return_value = true;
+                returnValue = true;
             }
         }
-        return return_value;
+        return returnValue;
     }
 
     /**

@@ -11,8 +11,6 @@ import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.BoundSql;
@@ -39,8 +37,8 @@ import java.util.*;
 @Intercepts({@Signature(type = StatementHandler.class, method = "prepare", args = {Connection.class, Integer.class})})
 public class CommonInterceptor implements Interceptor {
 
-    public static final String UPDATE_TIME_FIELD_NAME = JsqlUtils.transCamelToSnake("updateTime");
-    public static final String CREATE_TIME_FIELD_NAME = JsqlUtils.transCamelToSnake("createTime");
+    public static final String UPDATE_TIME_FIELD_NAME = JsqlUtils.transDbSchemesType("updateTime");
+    public static final String CREATE_TIME_FIELD_NAME = JsqlUtils.transDbSchemesType("createTime");
     public static final String ID_FIELD_NAME = "id";
     private Logger logger = LoggerFactory.getLogger(this.getClass());
     private static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");

@@ -37,19 +37,32 @@ public abstract class BaseDao {
      * 默认的数据库结构为 snake (a_b_c),代码中会将骆驼转换为蛇形
      * 如果数据库结果默认为 camel,则本变量设置为false
      */
-    public final static boolean DB_SCHEMES_SNAKE_TYPE = true;
+    public static boolean DB_SCHEMES_SNAKE_TYPE = true;
 
 
     /**
      * 最终数据库中的表/字段名大小写规格
      * true为全部小写，false为全部大写
      */
-    public final static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
+    public static boolean DB_SCHEMES_ALL_LOWER_CASE = false;
 
     /**
      * 全局忽略的字符串
      */
-    public final static String IGNORE_FILEDNAMES = "serialVersionUID";
+    public static String IGNORE_FILEDNAMES = "";
+
+    /**
+     * 允许用户在继承时可以重新覆盖默认配置
+     *
+     * @param dbSchemesSnakeType 默认数据库的结构类型
+     * @param dbSchemesAllLowerCase 数据库结构大小写情况
+     * @param ignoreFiledNames 需要固定忽略的字段名称
+     */
+    public void initConfig(boolean dbSchemesSnakeType, boolean dbSchemesAllLowerCase, String ignoreFiledNames) {
+        BaseDao.DB_SCHEMES_SNAKE_TYPE = dbSchemesSnakeType;
+        BaseDao.DB_SCHEMES_ALL_LOWER_CASE = dbSchemesAllLowerCase;
+        BaseDao.IGNORE_FILEDNAMES = ignoreFiledNames;
+    }
 
 
     /**
@@ -80,7 +93,7 @@ public abstract class BaseDao {
      */
     public Object insertEntity(Object entity) {
         Insert insert = new Insert();
-        insert.setTable(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
+        insert.setTable(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName())));
         insert.setColumns(JsqlUtils.getAllColumnNamesFromEntity(entity.getClass()));
         insert.setItemsList(JsqlUtils.getAllColumnValueFromEntity(entity, insert.getColumns()));
 
@@ -105,7 +118,7 @@ public abstract class BaseDao {
         }
 
         Insert insert = new Insert();
-        insert.setTable(new Table(JsqlUtils.transCamelToSnake(entities.get(0).getClass().getSimpleName())));
+        insert.setTable(new Table(JsqlUtils.transDbSchemesType(entities.get(0).getClass().getSimpleName())));
         insert.setColumns(JsqlUtils.getAllColumnNamesFromEntity(entities.get(0).getClass()));
         MultiExpressionList multiExpressionList = new MultiExpressionList();
         entities.stream().map(e -> JsqlUtils.getAllColumnValueFromEntity(e, insert.getColumns())).forEach(multiExpressionList::addExpressionList);
@@ -136,7 +149,7 @@ public abstract class BaseDao {
     /**
      * 简单删除实体对象
      *
-     * @param entity       实体对象
+     * @param entity      实体对象
      * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
@@ -148,7 +161,7 @@ public abstract class BaseDao {
         }
 
         Delete delete = new Delete();
-        delete.setTables(Arrays.asList(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName()))));
+        delete.setTables(Arrays.asList(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName()))));
 
         AndExpressionList andExpressionList = new AndExpressionList();
         conditionCols
@@ -179,7 +192,7 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entity       实体对象
+     * @param entity      实体对象
      * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @return 影响行数
      */
@@ -191,7 +204,7 @@ public abstract class BaseDao {
      * 简单更新实体对象
      *
      * @param entity         实体对象
-     * @param queryFields   作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      * @return 影响行数
      */
@@ -206,7 +219,7 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entities     实体对象
+     * @param entities    实体对象
      * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      */
     public void updateEntities(List<?> entities, String queryFields) {
@@ -217,8 +230,8 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entities     实体对象
-     * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param entities       实体对象
+     * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
      */
     public void updateEntities(List<?> entities, String queryFields, boolean isSupportBlank) {
@@ -240,7 +253,7 @@ public abstract class BaseDao {
         }
 
         Update update = new Update();
-        update.setTables(Arrays.asList(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName()))));
+        update.setTables(Arrays.asList(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName()))));
         Object[] colsAndValuesForValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, valueCols, isSupportBlank, false);
         update.setColumns((List<Column>) colsAndValuesForValues[0]);
         update.setExpressions((List<Expression>) colsAndValuesForValues[1]);
@@ -314,7 +327,7 @@ public abstract class BaseDao {
     public List selectEntity(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
         plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
-        plainSelect.setFromItem(new Table(JsqlUtils.transCamelToSnake(entity.getClass().getSimpleName())));
+        plainSelect.setFromItem(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName())));
         AndExpressionList andExpressionList = new AndExpressionList();
 
         // 添加外部条件
@@ -363,7 +376,7 @@ public abstract class BaseDao {
                     try {
                         ClassUtil.setValueByField(singleResult, JsqlUtils.transSnakeToCamel(key), ((Map<String, Object>) sr).get(key));
                     } catch (Exception e) {
-                        logger.error("processing entity setter value error, key : ["+key+"] entity : [" + entity.getClass().getName() + "] ", e);
+                        logger.error("processing entity setter value error, key : [" + key + "] entity : [" + entity.getClass().getName() + "] ", e);
                     }
                 }
 

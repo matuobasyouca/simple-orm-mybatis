@@ -25,7 +25,7 @@ public class JsqlUtils {
     /**
      * 默认的排序为正向排序
      */
-    private static final String defaultAsc = "asc";
+    private static final String DEFAULT_ASC = "asc";
 
     /**
      * 从给定的类中获取对应的数据库字段名称
@@ -57,7 +57,7 @@ public class JsqlUtils {
         return getAllFieldsFromClass(objClass, namedColumnNames).stream()
                 .filter(f -> (f.getAnnotation(NotDatabaseField.class) == null))
                 .filter(e -> ValidUtil.valid(namedColumnNames) ? namedColumnNames.contains(e.getName()) : false)
-                .map(f -> new Column(JsqlUtils.transCamelToSnake(f.getName())))
+                .map(f -> new Column(JsqlUtils.transDbSchemesType(f.getName())))
                 .collect(Collectors.toList());
 
     }
@@ -73,7 +73,7 @@ public class JsqlUtils {
         return getAllFieldsFromClass(objClass, exceptColumnNames).stream()
                 .filter(f -> (f.getAnnotation(NotDatabaseField.class) == null))
                 .filter(e -> ValidUtil.valid(exceptColumnNames) ? !exceptColumnNames.contains(e.getName()) : true)
-                .map(f -> new Column(JsqlUtils.transCamelToSnake(f.getName())))
+                .map(f -> new Column(JsqlUtils.transDbSchemesType(f.getName())))
                 .collect(Collectors.toList());
 
     }
@@ -178,12 +178,13 @@ public class JsqlUtils {
      */
     public static Expression getColumnValueFromEntity(Object entity, String fieldName) {
         // 如果是蛇形需要转成驼峰
-        if (fieldName.indexOf("_") != -1) {
+        if (fieldName.indexOf(ClassUtil.UNDERLINE_CHAR) != -1) {
             fieldName = JsqlUtils.transSnakeToCamel(fieldName);
         }
 
         // 如果是纯大写需要转为纯小写
-        if (fieldName.matches("[A-Z]+")) {
+        String regex = "[A-Z]+";
+        if (fieldName.matches(regex)) {
             fieldName = fieldName.toLowerCase();
         }
 
@@ -281,10 +282,10 @@ public class JsqlUtils {
 
                 String[] o = orderByString.split(" +");
                 OrderByElement orderByElement = new OrderByElement();
-                orderByElement.setExpression(new Column(JsqlUtils.transCamelToSnake(o[0])));
+                orderByElement.setExpression(new Column(JsqlUtils.transDbSchemesType(o[0])));
                 if (o.length == 2) {
                     orderByElement.setAsc(false);
-                    if (defaultAsc.equals(o[1].toLowerCase())) {
+                    if (DEFAULT_ASC.equals(o[1].toLowerCase())) {
                         orderByElement.setAsc(true);
                     }
                 }
@@ -380,22 +381,33 @@ public class JsqlUtils {
     // endregion
 
     /**
-     * 骆驼转蛇
+     * 由于java中的实体规范是camel命名方式，数据库中的对应形式就不一定，可能会存在三种形式
+     * <ul>
+     *     <li>驼峰：与类名类字段完全相同</li>
+     *     <li>蛇：下划线分割驼峰大写字母，全小写</li>
+     *     <li>蛇：下划线分割驼峰大写字母，全大写</li>
+     * </ul>
      *
      * @param name 待转换的字符串
      *
      * @return 转换后的字符串
      */
-    public static String transCamelToSnake(String name) {
-        if(BaseDao.DB_SCHEMES_ALL_LOWER_CASE){
-            return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toLowerCase();
-        }else {
-            return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toUpperCase();
+    public static String transDbSchemesType(String name) {
+        if(BaseDao.DB_SCHEMES_SNAKE_TYPE) {
+            // 数据库中是蛇形
+            if (BaseDao.DB_SCHEMES_ALL_LOWER_CASE) {
+                return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toLowerCase();
+            } else {
+                return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toUpperCase();
+            }
+        }else{
+            // 数据库中是驼峰
+            return name;
         }
     }
 
     /**
-     * 蛇转骆驼
+     * 蛇转骆驼，用于数据库字段转换为类/属性名称
      *
      * @param name 待转换的字符串
      *
