@@ -300,8 +300,8 @@ public abstract class BaseDao {
      * @param entity 待操作实体
      * @return 返回实体列表
      */
-    public List selectEntity(Object entity) {
-        return selectEntity(entity, null);
+    public List selectEntities(Object entity) {
+        return selectEntities(entity, null);
     }
 
     /**
@@ -311,8 +311,8 @@ public abstract class BaseDao {
      * @param orderBy 排序字段
      * @return 返回实体列表
      */
-    public List selectEntity(Object entity, String orderBy) {
-        return selectEntity(entity, null, orderBy);
+    public List selectEntities(Object entity, String orderBy) {
+        return selectEntities(entity, null, orderBy);
     }
 
 
@@ -324,7 +324,7 @@ public abstract class BaseDao {
      * @param orderBy          排序字段
      * @return 返回实体列表
      */
-    public List selectEntity(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
+    public List selectEntities(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
         plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
         plainSelect.setFromItem(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName())));
@@ -344,7 +344,7 @@ public abstract class BaseDao {
         plainSelect.setOrderByElements(JsqlUtils.getOrderByElementFromString(orderBy));
 
         // 构建Sql并执行
-        List lastResult = this.selectList("BaseDao.selectEntity", new HashMap<String, String>() {{
+        List lastResult = this.selectList("BaseDao.selectEntities", new HashMap<String, String>() {{
             put("baseSql", plainSelect.toString());
         }});
 
