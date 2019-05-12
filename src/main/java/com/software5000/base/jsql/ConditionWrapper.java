@@ -13,9 +13,11 @@ import java.util.Set;
 /**
  * 封装查询条件类
  *
- * @param <T> BaseEntity实体
+ * @param <T> 一般是实体
+ *
+ * @author matuobasyouca@gmail.com
  */
-public class ConditionWrapper<T extends Object> {
+public class ConditionWrapper<T> {
 
     private T entity;
     private AndExpressionList andExpressionList;
