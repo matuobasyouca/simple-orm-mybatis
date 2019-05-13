@@ -32,7 +32,12 @@ import javax.annotation.Resource;
 @Component
 public class MyBaseDao extends BaseDao {
     private SqlSessionTemplate sqlSessionTemplate;
-
+    
+    public MyBaseDao() {
+            // 在默认构造函数中设置 数据库是否蛇形， 数据库格式大小写， 通用忽略的字段名称
+            this.initConfig(true,false,"serialVersionUID");
+    }
+        
     @Resource
     public void setSqlSessionFactory(SqlSessionFactory sqlSessionFactory) {
         if (this.sqlSessionTemplate == null || sqlSessionFactory != this.sqlSessionTemplate.getSqlSessionFactory()) {
