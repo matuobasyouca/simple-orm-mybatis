@@ -12,7 +12,7 @@
 		${baseSql}
 	</insert>
 
-	<update id="updateEntity" parameterType="java.util.Map">
+	<update id="updateEntities" parameterType="java.util.Map">
 		${baseSql}
 	</update>
 
@@ -20,7 +20,7 @@
 		${baseSql}
 	</delete>
 
-	<delete id="deleteEntitys" parameterType="java.util.Map">
+	<delete id="deleteEntities" parameterType="java.util.Map">
 		${baseSql}
 	</delete>
 
@@ -28,7 +28,7 @@
 		${baseSql}
 	</select>
 
-	<select id="selectEntity" parameterType="java.util.Map"
+	<select id="selectEntities" parameterType="java.util.Map"
 		resultType="hashmap">
 		${baseSql}
 	</select>
