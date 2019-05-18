@@ -9,7 +9,7 @@
 <dependency>
     <groupId>com.software5000</groupId>
     <artifactId>simple-orm-mybatis</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
