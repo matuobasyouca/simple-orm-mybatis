@@ -3,6 +3,7 @@ package com.software5000.util;
 import com.google.common.base.CaseFormat;
 import com.software5000.base.BaseDao;
 import com.software5000.base.NotDatabaseField;
+import com.software5000.base.ValueUpdatePolicy;
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.schema.Column;
@@ -131,13 +132,12 @@ public class JsqlUtils {
     /**
      * 获取指定的列以及对应的值
      *
-     * @param entity         带值实体
-     * @param namedCols      指定列
-     * @param isSupportBlank 是否包含空字符值的列，true为包含
-     * @param isSupportNull  是否包含Null值的列，true为包含
+     * @param entity            带值实体
+     * @param namedCols         指定列
+     * @param valueUpdatePolicy 更新策略
      * @return 对象数组2个值，结果1：有值的列；结果2：对应顺序列的值
      */
-    public static Object[] getNamedColumnAndValueFromEntity(Object entity, List<Column> namedCols, boolean isSupportBlank, boolean isSupportNull) {
+    public static Object[] getNamedColumnAndValueFromEntity(Object entity, List<Column> namedCols, ValueUpdatePolicy valueUpdatePolicy) {
         List<Column> resultColumns = new ArrayList<>();
         List<Expression> expressions = new ArrayList<>();
         if (!ValidUtil.valid(namedCols) || namedCols.size() == 0) {
@@ -148,19 +148,26 @@ public class JsqlUtils {
             Expression expression = JsqlUtils.getColumnValueFromEntity(entity, column.getColumnName());
 
             // 空对象需要跳过
-            if(expression==null){
+            if (expression == null) {
                 continue;
             }
 
-            // 确认null是否接收
-            if (!isSupportNull && expression instanceof NullValue) {
+            // 跳过NULL值的策略确认
+            boolean skipNullValue = (valueUpdatePolicy.equals(ValueUpdatePolicy.NOT_EMPTY_NOT_NULL)
+                    || valueUpdatePolicy.equals(ValueUpdatePolicy.WITH_EMPTY_NOT_NULL))
+                    && expression instanceof NullValue;
+            if (skipNullValue) {
                 continue;
             }
 
-            // 确认空字符串接收
-            if (expression instanceof StringValue && !isSupportBlank && !ValidUtil.valid(expression)) {
+            // 跳过空值的策略确认
+            boolean skipEmptyValue = (valueUpdatePolicy.equals(ValueUpdatePolicy.NOT_EMPTY_NOT_NULL)
+                    || valueUpdatePolicy.equals(ValueUpdatePolicy.NOT_EMPTY_WITH_NULL))
+                    && (expression instanceof StringValue && !ValidUtil.valid(expression));
+            if (skipEmptyValue) {
                 continue;
             }
+
 
             resultColumns.add(column);
             expressions.add(JsqlUtils.getColumnValueFromEntity(entity, column.getColumnName()));
@@ -172,7 +179,7 @@ public class JsqlUtils {
     /**
      * 根据给出的实体，获取对应字段的值
      *
-     * @param entity 待操作实体
+     * @param entity    待操作实体
      * @param fieldName 数据库字段名称
      * @return 单个字段值
      */
@@ -189,16 +196,13 @@ public class JsqlUtils {
         }
 
         // 如果是全局忽略的字段则直接跳过
-        if(BaseDao.IGNORE_FILEDNAMES.indexOf(fieldName)>-1){
+        if (BaseDao.IGNORE_FILEDNAMES.indexOf(fieldName) > -1) {
             return null;
         }
 
         Object returnValue;
         try {
             String getterMethodName = "get" + String.valueOf(fieldName.charAt(0)).toUpperCase() + fieldName.substring(1);
-//            if(fieldName.startsWith("is")){
-//                getterMethodName=fieldName;
-//            }
             try {
                 returnValue = entity.getClass().getDeclaredMethod(getterMethodName).invoke(entity);
             } catch (NoSuchMethodException nsme) {
@@ -383,38 +387,41 @@ public class JsqlUtils {
     /**
      * 由于java中的实体规范是camel命名方式，数据库中的对应形式就不一定，可能会存在三种形式
      * <ul>
-     *     <li>驼峰：与类名类字段完全相同</li>
-     *     <li>蛇：下划线分割驼峰大写字母，全小写</li>
-     *     <li>蛇：下划线分割驼峰大写字母，全大写</li>
+     * <li>驼峰：与类名类字段完全相同</li>
+     * <li>蛇：下划线分割驼峰大写字母，全小写</li>
+     * <li>蛇：下划线分割驼峰大写字母，全大写</li>
      * </ul>
      *
      * @param name 待转换的字符串
-     *
      * @return 转换后的字符串
      */
     public static String transDbSchemesType(String name) {
-        if(BaseDao.DB_SCHEMES_SNAKE_TYPE) {
+        if (BaseDao.DB_SCHEMES_SNAKE_TYPE) {
             // 数据库中是蛇形
             if (BaseDao.DB_SCHEMES_ALL_LOWER_CASE) {
                 return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toLowerCase();
             } else {
                 return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name).toUpperCase();
             }
-        }else{
+        } else {
             // 数据库中是驼峰
             return name;
         }
     }
 
     /**
-     * 蛇转骆驼，用于数据库字段转换为类/属性名称
+     * 蛇转驼峰，用于数据库字段转换为类/属性名称
      *
      * @param name 待转换的字符串
-     *
      * @return 转换后的字符串
      */
     public static String transSnakeToCamel(String name) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+        // 只有数据库中是蛇，代码中是驼峰
+        if (BaseDao.DB_SCHEMES_SNAKE_TYPE) {
+            return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+        } else {
+            return name;
+        }
     }
 
 }

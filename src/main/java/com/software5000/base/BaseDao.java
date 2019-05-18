@@ -34,7 +34,7 @@ public abstract class BaseDao {
     private Logger logger = LoggerFactory.getLogger(BaseDao.class);
 
     /**
-     * 默认的数据库结构为 snake (a_b_c),代码中会将骆驼转换为蛇形
+     * 默认的数据库结构为 snake (a_b_c),代码中会将驼峰转换为蛇形
      * 如果数据库结果默认为 camel,则本变量设置为false
      */
     public static boolean DB_SCHEMES_SNAKE_TYPE = true;
@@ -91,7 +91,7 @@ public abstract class BaseDao {
      * @param entity 实体对象
      * @return 带id的插入对象
      */
-    public Object insertEntity(Object entity) {
+    public <T> T insertEntity(T entity) {
         Insert insert = new Insert();
         insert.setTable(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName())));
         insert.setColumns(JsqlUtils.getAllColumnNamesFromEntity(entity.getClass()));
@@ -112,7 +112,7 @@ public abstract class BaseDao {
      * @param entities 待插入的实体列表
      * @return 带id的插入对象列表
      */
-    public List insertEntities(List<?> entities) {
+    public <T> List<T> insertEntities(List<T> entities) {
         if (entities == null || entities.size() == 0) {
             return null;
         }
@@ -197,7 +197,7 @@ public abstract class BaseDao {
      * @return 影响行数
      */
     public int updateEntity(Object entity, String queryFields) {
-        return updateEntity(entity, queryFields, true);
+        return updateEntity(entity, queryFields, ValueUpdatePolicy.NOT_EMPTY_NOT_NULL);
     }
 
     /**
@@ -205,14 +205,14 @@ public abstract class BaseDao {
      *
      * @param entity         实体对象
      * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
-     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
+     * @param valueUpdatePolicy 更新策略
      * @return 影响行数
      */
-    public int updateEntity(Object entity, String queryFields, boolean isSupportBlank) {
+    public int updateEntity(Object entity, String queryFields, ValueUpdatePolicy valueUpdatePolicy) {
         List<Column> valueColumns = JsqlUtils.getAllColumnNamesFromEntityExceptSome(entity.getClass(), Arrays.asList(queryFields.split(",")));
         List<Column> conditionCols = JsqlUtils.getAllColumnNamesFromEntityWithNames(entity.getClass(), Arrays.asList(queryFields.split(",")));
         return updateEntityWithNamedColumns(valueColumns, conditionCols,
-                entity, isSupportBlank);
+                entity, valueUpdatePolicy);
     }
 
 
@@ -223,7 +223,7 @@ public abstract class BaseDao {
      * @param queryFields 作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      */
     public void updateEntities(List<?> entities, String queryFields) {
-        entities.forEach(entity -> updateEntity(entity, queryFields, true));
+        entities.forEach(entity -> updateEntity(entity, queryFields, ValueUpdatePolicy.NOT_EMPTY_NOT_NULL));
     }
 
 
@@ -232,10 +232,10 @@ public abstract class BaseDao {
      *
      * @param entities       实体对象
      * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
-     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
+     * @param valueUpdatePolicy 更新策略
      */
-    public void updateEntities(List<?> entities, String queryFields, boolean isSupportBlank) {
-        entities.forEach(entity -> updateEntity(entity, queryFields, isSupportBlank));
+    public void updateEntities(List<?> entities, String queryFields, ValueUpdatePolicy valueUpdatePolicy) {
+        entities.forEach(entity -> updateEntity(entity, queryFields, valueUpdatePolicy));
     }
 
     /**
@@ -244,17 +244,17 @@ public abstract class BaseDao {
      * @param valueCols      指定的更新值的字段
      * @param conditionCols  指定的条件列字段
      * @param entity         待更新实体
-     * @param isSupportBlank 是否支持空值的更新 为true表示[空值也会更新只有null才不会更新]，false表示[空值跟null都不会更新]
+     * @param valueUpdatePolicy 更新策略
      * @return 影响行数
      */
-    private int updateEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity, boolean isSupportBlank) {
+    private int updateEntityWithNamedColumns(List<Column> valueCols, List<Column> conditionCols, Object entity, ValueUpdatePolicy valueUpdatePolicy) {
         if (Iterables.isEmpty(conditionCols)) {
             throw new BpMybatisException("can't update data without value of condition columns.");
         }
 
         Update update = new Update();
         update.setTables(Arrays.asList(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName()))));
-        Object[] colsAndValuesForValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, valueCols, isSupportBlank, false);
+        Object[] colsAndValuesForValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, valueCols, valueUpdatePolicy);
         update.setColumns((List<Column>) colsAndValuesForValues[0]);
         update.setExpressions((List<Expression>) colsAndValuesForValues[1]);
 
@@ -334,7 +334,7 @@ public abstract class BaseDao {
         // PS：有添加外部条件的字段，会被清除实体值，防止后续再加入条件
         andExpressionList.append(conditionWrapper != null ? conditionWrapper.get() : null);
 
-        Object[] colsAndValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, null, false, false);
+        Object[] colsAndValues = JsqlUtils.getNamedColumnAndValueFromEntity(entity, null, ValueUpdatePolicy.NOT_EMPTY_NOT_NULL);
 
         for (int i = 0; i < ((List) colsAndValues[0]).size(); i++) {
             andExpressionList.append(JsqlUtils.equalTo((Column) ((List) colsAndValues[0]).get(i), (Expression) ((List) colsAndValues[1]).get(i)));
