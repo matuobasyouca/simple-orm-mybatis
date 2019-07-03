@@ -13,7 +13,7 @@
 </dependency>
 ```
 
-2. 接着需要将 ``` [BaseDaoMapper.xml](https://github.com/matuobasyouca/simple-orm-mybatis/blob/master/src/main/java/com/software5000/biz/entity/mapping/BaseDaoMapper.xml) ``` 文件放在你的 mapper 的扫描文件夹内。
+2. 接着需要将 [BaseDaoMapper.xml](https://github.com/matuobasyouca/simple-orm-mybatis/blob/master/src/main/java/com/software5000/biz/entity/mapping/BaseDaoMapper.xml) 文件放在你的 mapper 的扫描文件夹内。
 
 3. 最后需要在你的代码中添加一个 **BaseDao** 实现类，用于提供数据库操作服务（注意：需要在spring的扫描包内，因为需要注入某些属性），整个复制即可，类名可以改为你自己需要的名字
 ```
