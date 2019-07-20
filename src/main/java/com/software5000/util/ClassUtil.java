@@ -745,7 +745,7 @@ public final class ClassUtil {
      * @param source 待转换map
      * @param classes 待设值类型
      * @return 根据传入的类的顺序返回的实例对象数组
-     * @throws BpMybatisException
+     * @throws BpMybatisException 抛出封装异常
      */
     public static Object[] transformMapToMuiltiObject(@Nonnull Map<String,?> source, Class[] classes) throws BpMybatisException {
         Object[] last = new Object[classes.length];

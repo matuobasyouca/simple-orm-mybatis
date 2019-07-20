@@ -3,8 +3,7 @@ package com.software5000.util;
 /**
  * twitter的snowflake算法 -- java实现
  *
- * @author beyond
- * @date 2016/11/26
+ * @author cc
  */
 public class SnowFlake {
 
@@ -53,7 +52,7 @@ public class SnowFlake {
     /**
      * 产生下一个ID
      *
-     * @return
+     * @return 返回id
      */
     public synchronized long nextId() {
         long currStmp = getNewstmp();

@@ -242,6 +242,8 @@ public class JsqlUtils {
             return new TimestampValue(String.valueOf(value));
         } else if (value instanceof Time) {
             return new TimeValue(String.valueOf(value));
+        } else if (value instanceof Boolean) {
+            return ((Boolean)value)?new LongValue(1):new LongValue(0);
         } else if (value instanceof java.util.Date || value instanceof java.sql.Date) {
             // A Date in the form {d 'yyyy-mm-dd'}
             return new DateValue(new SimpleDateFormat("yyyy-MM-dd").format((java.sql.Date) value));
