@@ -8,13 +8,13 @@ import com.software5000.util.BpMybatisException;
 import com.software5000.util.ClassUtil;
 import com.software5000.util.JsqlUtils;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.expression.operators.relational.MultiExpressionList;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.insert.Insert;
-import net.sf.jsqlparser.statement.select.AllColumns;
-import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.*;
 import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.binding.MapperMethod;
 import org.apache.ibatis.session.SqlSession;
@@ -52,11 +52,16 @@ public abstract class BaseDao {
     public static String IGNORE_FILEDNAMES = "";
 
     /**
+     * 全局分隔符
+     */
+    private static final String splitPrefix = ",";
+
+    /**
      * 允许用户在继承时可以重新覆盖默认配置
      *
-     * @param dbSchemesSnakeType 默认数据库的结构类型
+     * @param dbSchemesSnakeType    默认数据库的结构类型
      * @param dbSchemesAllLowerCase 数据库结构大小写情况
-     * @param ignoreFiledNames 需要固定忽略的字段名称
+     * @param ignoreFiledNames      需要固定忽略的字段名称
      */
     public void initConfig(boolean dbSchemesSnakeType, boolean dbSchemesAllLowerCase, String ignoreFiledNames) {
         BaseDao.DB_SCHEMES_SNAKE_TYPE = dbSchemesSnakeType;
@@ -203,8 +208,8 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entity         实体对象
-     * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param entity            实体对象
+     * @param queryFields       作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @param valueUpdatePolicy 更新策略
      * @return 影响行数
      */
@@ -230,8 +235,8 @@ public abstract class BaseDao {
     /**
      * 简单更新实体对象
      *
-     * @param entities       实体对象
-     * @param queryFields    作为查询条件的类属性名称，如<code>ID,codeDesc</code>
+     * @param entities          实体对象
+     * @param queryFields       作为查询条件的类属性名称，如<code>ID,codeDesc</code>
      * @param valueUpdatePolicy 更新策略
      */
     public void updateEntities(List<?> entities, String queryFields, ValueUpdatePolicy valueUpdatePolicy) {
@@ -241,9 +246,9 @@ public abstract class BaseDao {
     /**
      * 根据指定字段设置过滤条件，指定字段更新值
      *
-     * @param valueCols      指定的更新值的字段
-     * @param conditionCols  指定的条件列字段
-     * @param entity         待更新实体
+     * @param valueCols         指定的更新值的字段
+     * @param conditionCols     指定的条件列字段
+     * @param entity            待更新实体
      * @param valueUpdatePolicy 更新策略
      * @return 影响行数
      */
@@ -301,18 +306,30 @@ public abstract class BaseDao {
      * @return 返回实体列表
      */
     public List selectEntities(Object entity) {
-        return selectEntities(entity, null);
+        return selectEntities(entity, null, null);
+    }
+
+    /**
+     * 简单加载实体对象
+     *
+     * @param entity 待操作实体
+     * @param queryFields 查询时指定列
+     * @return 返回实体列表
+     */
+    public List selectEntities(Object entity, String queryFields) {
+        return selectEntities(entity, queryFields, null);
     }
 
     /**
      * 简单加载实体对象
      *
      * @param entity  待操作实体
+     * @param queryFields 查询时指定列
      * @param orderBy 排序字段
      * @return 返回实体列表
      */
-    public List selectEntities(Object entity, String orderBy) {
-        return selectEntities(entity, null, orderBy);
+    public List selectEntities(Object entity, String queryFields, String orderBy) {
+        return selectEntities(entity, null, queryFields, orderBy);
     }
 
 
@@ -321,12 +338,17 @@ public abstract class BaseDao {
      *
      * @param entity           待操作实体
      * @param conditionWrapper 外部封装条件
+     * @param queryFields 查询时指定列
      * @param orderBy          排序字段
      * @return 返回实体列表
      */
-    public List selectEntities(Object entity, ConditionWrapper conditionWrapper, String orderBy) {
+    public List selectEntities(Object entity, ConditionWrapper conditionWrapper, String queryFields, String orderBy) {
         PlainSelect plainSelect = new PlainSelect();
-        plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
+        if (queryFields == null) {
+            plainSelect.setSelectItems(Arrays.asList(new AllColumns()));
+        } else {
+            plainSelect.addSelectItems(getColumnsFromQueryFields(queryFields));
+        }
         plainSelect.setFromItem(new Table(JsqlUtils.transDbSchemesType(entity.getClass().getSimpleName())));
         AndExpressionList andExpressionList = new AndExpressionList();
 
@@ -353,10 +375,24 @@ public abstract class BaseDao {
     }
 
     /**
+     * 将传入的字段列表转为数据库列
+     * @param queryFields 查询时指定列
+     * @return 数据库列
+     */
+    private SelectExpressionItem[] getColumnsFromQueryFields(String queryFields) {
+        List<SelectExpressionItem> columns = new ArrayList();
+        for (String field : queryFields.split(splitPrefix)) {
+            columns.add(new SelectExpressionItem(new Column(JsqlUtils.transDbSchemesType(field))));
+        }
+
+        return columns.toArray(new SelectExpressionItem[columns.size()]);
+    }
+
+    /**
      * 利用结果集填充对应实体
      *
-     * @param entity     参数实体，用于新建结果实体类
-     * @param lastResult sql查询的结果集
+     * @param entity      参数实体，用于新建结果实体类
+     * @param lastResult  sql查询的结果集
      * @return 返回填充后的实体列表
      */
     private List fillEntities(Object entity, List lastResult) {
