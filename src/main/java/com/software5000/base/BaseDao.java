@@ -64,9 +64,9 @@ public abstract class BaseDao {
      * @param ignoreFiledNames      需要固定忽略的字段名称
      */
     public void initConfig(boolean dbSchemesSnakeType, boolean dbSchemesAllLowerCase, String ignoreFiledNames) {
-        BaseDao.DB_SCHEMES_SNAKE_TYPE = dbSchemesSnakeType;
-        BaseDao.DB_SCHEMES_ALL_LOWER_CASE = dbSchemesAllLowerCase;
-        BaseDao.IGNORE_FILEDNAMES = ignoreFiledNames;
+        com.software5000.base.BaseDao.DB_SCHEMES_SNAKE_TYPE = dbSchemesSnakeType;
+        com.software5000.base.BaseDao.DB_SCHEMES_ALL_LOWER_CASE = dbSchemesAllLowerCase;
+        com.software5000.base.BaseDao.IGNORE_FILEDNAMES = ignoreFiledNames;
     }
 
 
@@ -105,7 +105,7 @@ public abstract class BaseDao {
         Map<String, Object> param = new HashMap<>(2);
         param.put("baseSql", insert.toString());
         param.put("entity", entity);
-        this.insert("BaseDao.insertEntity", param);
+        this.insert("com.software5000.base.BaseDao.insertEntity", param);
 
         return entity;
     }
@@ -132,7 +132,7 @@ public abstract class BaseDao {
         Map<String, Object> param = new MapperMethod.ParamMap<>();
         param.put("baseSql", insert.toString());
         param.put("list", entities);
-        this.insert("BaseDao.insertEntityList", param);
+        this.insert("com.software5000.base.BaseDao.insertEntityList", param);
         return entities;
     }
     // endregion
@@ -174,7 +174,7 @@ public abstract class BaseDao {
 
         delete.setWhere(andExpressionList.get());
 
-        return this.delete("BaseDao.deleteEntity", new HashMap<String, String>() {{
+        return this.delete("com.software5000.base.BaseDao.deleteEntity", new HashMap<String, String>() {{
             put("baseSql", delete.toString());
         }});
     }
@@ -269,7 +269,7 @@ public abstract class BaseDao {
 
         update.setWhere(andExpressionList.get());
 
-        return this.update("BaseDao.updateEntities", new HashMap<String, String>() {{
+        return this.update("com.software5000.base.BaseDao.updateEntities", new HashMap<String, String>() {{
             put("baseSql", update.toString());
         }});
     }
@@ -366,7 +366,7 @@ public abstract class BaseDao {
         plainSelect.setOrderByElements(JsqlUtils.getOrderByElementFromString(orderBy));
 
         // 构建Sql并执行
-        List lastResult = this.selectList("BaseDao.selectEntities", new HashMap<String, String>() {{
+        List lastResult = this.selectList("com.software5000.base.BaseDao.selectEntities", new HashMap<String, String>() {{
             put("baseSql", plainSelect.toString());
         }});
 
